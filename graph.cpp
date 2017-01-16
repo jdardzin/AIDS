@@ -1,5 +1,5 @@
 #include "graph.h"
-
+#include "row.h"
 
 
 graph::graph(): vertices(0)
@@ -55,9 +55,6 @@ bool graph::operator==(graph const &other) const
 
 bool graph::operator==(int** const &tab) const
 {
-	std::cout << "operator pocz\n";
-	printArray(tab, 4);
-	std::cout << "operator koniec\n";
 	for (int i = 0; i < vertices; ++i) {
 		for (int j = 0; j < vertices; ++j) {
 			if (adjMatrix[i][j] != tab[i][j])
@@ -120,6 +117,21 @@ graph::~graph()
 	delete adjMatrix;
 }
 
+graph graph::operator*(row* const &tab)
+{
+	int** result = new int*[vertices];
+	for (int i = 0; i < vertices; ++i) {
+		result[i] = new int[vertices];
+		std::fill(result[i], result[i] + vertices, 0);
+	}
+	for (int i = 0; i < vertices; ++i) {
+		for (int j = 0; j < vertices; ++j) {
+			for (int k = 0; k < vertices; ++k)
+				result[i][j] += adjMatrix[i][k] * tab[j][k];
+		}
+	}
+	return graph(result, vertices);
+}
 graph graph::operator*(int** const &tab)
 {
 	graph result(multiplyTransposed(adjMatrix, tab, vertices), vertices);
@@ -130,6 +142,22 @@ graph graph::operator*(int** const &tab)
 int** operator*(int** const &tab, graph const &g)
 {
 	return matrixMultiply(tab, g.adjMatrix, g.vertices);
+}
+
+int** operator*(row* const &tab, graph const &g)
+{
+	int** result = new int*[g.vertices];
+	for (int i = 0; i < g.vertices; ++i) {
+		result[i] = new int[g.vertices];
+		std::fill(result[i], result[i] + g.vertices, 0);
+	}
+	for (int i = 0; i < g.vertices; ++i) {
+		for (int j = 0; j < g.vertices; ++j) {
+			for (int k = 0; k < g.vertices; ++k)
+				result[i][j] += tab[i][k] * g.adjMatrix[k][j];
+		}
+	}
+	return result;
 }
 
 int** matrixMultiply(int** const &first, int** const &second, int const size)
@@ -174,4 +202,26 @@ void printArray(int** const &tab, int const size)
 		}
 		std::cout << "\n";
 	}
+}
+
+
+bool graph::isIsomorphic(graph &g)
+{
+	row* arr;
+	arr = new row[vertices];
+	for(int i=0; i<vertices; i++){
+		arr[i] = row(vertices, i);
+	}
+	while(std::next_permutation(arr, arr+vertices, comparator())) {
+		if(*this == arr*(g*arr))
+		{
+			std::cout<<"IZOMORFICZNE\n";
+			for(int i=0; i<vertices; i++){
+				std::cout<<i<<"->"<<arr[i].onePos<<std::endl;
+			}
+			return true;
+		}
+	}
+	std::cout<<"NIEIZOMORFICZNE\n";
+	return false;
 }
